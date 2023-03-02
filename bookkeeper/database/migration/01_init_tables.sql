@@ -2,8 +2,8 @@
 CREATE TABLE IF NOT EXISTS expense (
     "amount" INTEGER NOT NULL CHECK("amount" >= 0),
     "category" INTEGER,
-    "expense_date" TEXT NOT NULL CHECK(strftime('%Y-%m-%d', "added_date") IS NOT NULL),
-    "added_date" TEXT NOT NULL DEFAULT CURRENT_DATE CHECK(strftime('%Y-%m-%d', "added_date") IS NOT NULL),
+    "expense_date" TEXT NOT NULL,
+    "added_date" TEXT NOT NULL,
     "comment" TEXT CHECK(length("comment") <= 100)
 );
 

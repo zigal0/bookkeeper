@@ -18,8 +18,8 @@ setup:
 	poetry install
 
 # TEST
-.PHONY: lint
-lint:
+.PHONY: check
+check:
 	poetry run pytest --cov
 	poetry run mypy --strict bookkeeper
 	poetry run pylint bookkeeper

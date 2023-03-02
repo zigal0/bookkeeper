@@ -5,7 +5,7 @@ import pytest
 
 @pytest.fixture
 def custom_class():
-    class Custom():
+    class Custom:
         pk = 0
 
     return Custom
@@ -17,14 +17,22 @@ def repo():
 
 
 def test_crud(repo, custom_class):
+
+    # add
     obj = custom_class()
     pk = repo.add(obj)
     assert obj.pk == pk
+
+    # get
     assert repo.get(pk) == obj
+
+    # update
     obj2 = custom_class()
     obj2.pk = pk
     repo.update(obj2)
     assert repo.get(pk) == obj2
+
+    # delete
     repo.delete(pk)
     assert repo.get(pk) is None
 
