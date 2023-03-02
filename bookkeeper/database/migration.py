@@ -29,7 +29,7 @@ import sqlite3
 #     applied_at: datetime = field(default_factory=datetime.now)
 
 
-DB_FILE = 'bookkeeper.db'
+DB_FILE = '../repository/bookkeeper.db'
 AVAILABLE_MODES = ['up', 'down']
 MIGRATION_DIR = "migration"
 
@@ -42,23 +42,23 @@ class Colors:
     DEFAULT = '\033[0m'
 
 
-def print_fail_msg(msg: str):
+def print_fail_msg(msg: str) -> None:
     print(f"{Colors.FAIL}FAIL: " + msg + f"{Colors.DEFAULT}")
 
 
-def print_warning_msg(msg: str):
+def print_warning_msg(msg: str) -> None:
     print(f"{Colors.WARNING}WARNING: " + msg + f"{Colors.DEFAULT}")
 
 
-def print_info_msg(msg: str):
+def print_info_msg(msg: str) -> None:
     print(f"{Colors.INFO}INFO: " + msg + f"{Colors.DEFAULT}")
 
 
-def print_success_msg(msg: str):
+def print_success_msg(msg: str) -> None:
     print(f"{Colors.SUCCESS}SUCCESS: " + msg + f"{Colors.DEFAULT}")
 
 
-def execute_query(query: str):
+def execute_query(query: str) -> None:
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
         cur.execute(query)
@@ -66,12 +66,12 @@ def execute_query(query: str):
     con.close()
 
 
-def split_sql_queries(sql_queries: str):
+def split_sql_queries(sql_queries: str) -> list[str]:
     return [query.strip() for query in sql_queries.split(';')]
 
 
 # run_migration runs 1 file of migrations
-def run_migration(file_name):
+def run_migration(file_name: str) -> None:
     file_name_parts = file_name.split('_')
 
     try:
@@ -119,20 +119,4 @@ for migration_name in migrations:
 print_success_msg("All migration were applied")
 
 # Try to create fast schemas
-# from bookkeeper.models.expense import Expense
-# from bookkeeper.models.budget import Budget
-# from bookkeeper.models.category import Category
-#
-#
-# def create_db_schemas():
-#     for cls in [Expense, Budget, Category]:
-#         table_name = cls.__name__.lower()
-#         fields = get_annotations(cls, eval_str=True)
-#         fields.pop('pk')
-#         db_fields = ', '.join(fields.keys())
-#
-#         with sqlite3.connect(DB_FILE) as con:
-#             cur = con.cursor()
-#             cur.execute(f"CREATE TABLE IF NOT EXISTS {table_name} ({db_fields})")
-#
-#         con.close()
+
