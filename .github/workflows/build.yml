@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [ "master" ]
+  pull_request:
+    branches: [ "master" ]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v3
+    - name: Set up Python 3.10
+      uses: actions/setup-python@v3
+      with:
+        python-version: "3.10"
+        architecture: 'x64'
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+    - name: Install dependencies
+      run: poetry install
+    - name: mypy
+      run: poetry run mypy --strict bookkeeper
+    - name: pylint
+      run: poetry run pylint bookkeeper
+    - name: flake8
+      run: poetry run flake8 bookkeeper
+    - name: test
+      run: poetry run pytest --cov

@@ -7,9 +7,10 @@ from enum import Enum
 
 
 class Period(Enum):
-    DAY = 1
-    WEEK = 2
-    MONTH = 3
+    """Enum для задания дней"""
+    DAY = "День"
+    WEEK = "Неделя"
+    MONTH = "Месяц"
 
 
 @dataclass(slots=True)
@@ -24,4 +25,3 @@ class Budget:
     category: int
     period: Period
     pk: int = 0
-
