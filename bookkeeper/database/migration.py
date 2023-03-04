@@ -1,12 +1,14 @@
+"""
+Скрипт прдназначен для накатки миграций с базой данныйх SQLite.
+"""
+
 import sys
 import os
 import sqlite3
 
-# TODO: Требуется мета таблица, для слежки за миграциями.
-# from dataclasses import dataclass, field
-# from datetime import datetime
-#
-#
+from enum import Enum
+
+
 # CREATE_META_MIGRATION_TABLE = """CREATE TABLE IF NOT EXISTS meta_migration (
 #     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
 #     "version_id" INTEGER UNIQUE NOT NULL,
@@ -29,12 +31,13 @@ import sqlite3
 #     applied_at: datetime = field(default_factory=datetime.now)
 
 
-DB_FILE = '../repository/bookkeeper.db'
+DB_FILE = 'bookkeeper.db'
 AVAILABLE_MODES = ['up', 'down']
 MIGRATION_DIR = "migration"
 
 
-class Colors:
+class Colors(Enum):
+    """Класс с заданными константами для цветов."""
     INFO = '\033[94m'
     SUCCESS = '\033[92m'
     WARNING = '\033[93m'
@@ -43,22 +46,27 @@ class Colors:
 
 
 def print_fail_msg(msg: str) -> None:
+    """Функция печати сообщения с FAIL."""
     print(f"{Colors.FAIL}FAIL: " + msg + f"{Colors.DEFAULT}")
 
 
 def print_warning_msg(msg: str) -> None:
+    """Функция печати сообщения с WARNING."""
     print(f"{Colors.WARNING}WARNING: " + msg + f"{Colors.DEFAULT}")
 
 
 def print_info_msg(msg: str) -> None:
+    """Функция печати сообщение с INFO."""
     print(f"{Colors.INFO}INFO: " + msg + f"{Colors.DEFAULT}")
 
 
 def print_success_msg(msg: str) -> None:
+    """Функция печати сообщение с SUCCESS."""
     print(f"{Colors.SUCCESS}SUCCESS: " + msg + f"{Colors.DEFAULT}")
 
 
 def execute_query(query: str) -> None:
+    """Выполняет запрос в базу данных"""
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
         cur.execute(query)
@@ -67,11 +75,12 @@ def execute_query(query: str) -> None:
 
 
 def split_sql_queries(sql_queries: str) -> list[str]:
+    """Разделяет sql запросы из файла."""
     return [query.strip() for query in sql_queries.split(';')]
 
 
-# run_migration runs 1 file of migrations
-def run_migration(file_name: str) -> None:
+def execute_migration_file(file_name: str, mode: str) -> None:
+    """Запускате исполнения одного файла миграции."""
     file_name_parts = file_name.split('_')
 
     try:
@@ -82,7 +91,7 @@ def run_migration(file_name: str) -> None:
         sys.exit()
 
     path = MIGRATION_DIR + "/" + file_name
-    with open(path, mode='r') as file:
+    with open(path, mode='r', encoding="utf-8") as file:
         sql_script = file.read()
 
     up_down_scripts = sql_script.split('-- down')
@@ -98,25 +107,26 @@ def run_migration(file_name: str) -> None:
     print_info_msg(f"Migration with id = {version_id} was applied with mode {mode}")
 
 
-# main script
-if len(sys.argv) != 2:
-    print_fail_msg("You need to provide one of next options: " + str(AVAILABLE_MODES))
-    sys.exit()
+def run_migration() -> None:
+    """Основной скрипт, запускающий процесс накатки миграций."""
+    if len(sys.argv) != 2:
+        print_fail_msg("You need to provide one of next options: " + str(AVAILABLE_MODES))
+        sys.exit()
 
-mode = sys.argv[1]
+    mode = sys.argv[1]
 
-if mode not in AVAILABLE_MODES:
-    print_fail_msg("Mode " + mode + " is incorrect")
-    sys.exit()
+    if mode not in AVAILABLE_MODES:
+        print_fail_msg("Mode " + mode + " is incorrect")
+        sys.exit()
 
-all_file_names = os.listdir(MIGRATION_DIR)
-migrations = sorted([file_name for file_name in all_file_names
-                     if file_name.endswith(".sql")])
+    all_file_names = os.listdir(MIGRATION_DIR)
+    migrations = sorted([file_name for file_name in all_file_names
+                         if file_name.endswith(".sql")])
 
-for migration_name in migrations:
-    run_migration(migration_name)
+    for migration_name in migrations:
+        execute_migration_file(migration_name, mode)
 
-print_success_msg("All migration were applied")
+    print_success_msg("All migration were applied")
 
-# Try to create fast schemas
 
+run_migration()

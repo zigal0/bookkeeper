@@ -7,6 +7,7 @@ from typing import Any
 from inspect import get_annotations
 from datetime import datetime
 
+
 from bookkeeper.repository.abstract_repository import AbstractRepository, T
 
 DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
@@ -29,49 +30,54 @@ class SQLiteRepository(AbstractRepository[T]):
         placeholders = ', '.join("?" * len(self.fields))
         fields_update = ", ".join([f"{field}=?" for field in self.fields.keys()])
 
+        self.queries = {
+            'foreign_keys': 'PRAGMA foreign_keys = ON',
+            'add': f'INSERT INTO {self.table_name} ({names}) VALUES ({placeholders})',
+            'get': f'SELECT ROWID, * FROM {self.table_name} WHERE ROWID = ?',
+            'get_all': f'SELECT ROWID, * FROM {self.table_name}',
+            'update': f'UPDATE {self.table_name} SET {fields_update} WHERE ROWID = ?',
+            'delete': f'DELETE FROM {self.table_name} WHERE ROWID = ?',
+        }
+
         # queries
-        self.query_foreign_keys = 'PRAGMA foreign_keys = ON'
-        self.query_add = f'INSERT INTO {self.table_name} ({names}) VALUES ({placeholders})'
-        self.query_get = f'SELECT ROWID, * FROM {self.table_name} WHERE ROWID = ?'
-        self.query_get_all = f'SELECT ROWID, * FROM {self.table_name}'
-        self.query_update = f'UPDATE {self.table_name} SET {fields_update} WHERE ROWID = ?'
-        self.query_delete = f'DELETE FROM {self.table_name} WHERE ROWID = ?'
 
-    def _row2obj(self, row: tuple[Any]) -> T:
-        kwargs = dict(zip(self.fields, row[1:]))
-        obj = self.cls(**kwargs)
+    def _row2obj(self, row: tuple[Any]) -> Any:
+        class_arguments = {}
+
+        # Компановка аргументов класса (+ обработка формата datetime)
+        for field_value, field_name in zip(row[1:], self.fields.keys()):    # type: ignore
+            if self.fields[field_name] == datetime:
+                field_value = datetime.strptime(field_value, DEFAULT_DATE_FORMAT)
+
+            class_arguments[field_name] = field_value
+
+        obj = self.cls(**class_arguments)
         obj.pk = row[0]
-
-        # Приводим время к требуемому формату
-        for filed_name, field_cls in self.fields.items():
-            print(field_cls)
-            if field_cls == datetime:
-                date_str = obj.__getattribute__(filed_name)
-                date_format = datetime.strptime(date_str, DEFAULT_DATE_FORMAT)
-                obj.__setattr__(filed_name, date_format)
 
         return obj
 
     def add(self, obj: T) -> int:
         if getattr(obj, 'pk', None) != 0:
-            raise ValueError(f'try to add object {obj} with filled `pk` attribute')
+            raise ValueError(f'Try to add object {obj} with filled `pk` attribute')
 
         values = [getattr(obj, x) for x in self.fields]
 
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute(self.query_foreign_keys)
-            cur.execute(self.query_add, values)
-            obj.pk = cur.lastrowid
+            cur.execute(self.queries['foreign_keys'])
+            cur.execute(self.queries['add'], values)
+
+            if cur.lastrowid is not None:
+                obj.pk = cur.lastrowid
 
         con.close()
 
         return obj.pk
 
-    def get(self, pk: int) -> T | None:
+    def get(self, pk: int) -> Any | None:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            row = cur.execute(self.query_get, [pk]).fetchone()
+            row = cur.execute(self.queries['get'], [pk]).fetchone()
 
         con.close()
 
@@ -83,15 +89,16 @@ class SQLiteRepository(AbstractRepository[T]):
     def get_all(self, where: dict[str, Any] | None = None) -> list[T]:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
+            base = self.queries['get_all']
 
             if where is not None:
                 conditions = " AND ".join([f"{field} = ?" for field in where.keys()])
                 rows = cur.execute(
-                    self.query_get_all + f' WHERE {conditions}',
+                    base + f' WHERE {conditions}',
                     list(where.values())
                 ).fetchall()
             else:
-                rows = cur.execute(self.query_get_all).fetchall()
+                rows = cur.execute(base).fetchall()
 
         con.close()
 
@@ -99,15 +106,15 @@ class SQLiteRepository(AbstractRepository[T]):
 
     def update(self, obj: T) -> None:
         if getattr(obj, 'pk', None) is None:
-            raise ValueError(f'try to update object without `pk` attribute')
+            raise ValueError('Try to update object without `pk` attribute')
 
         values = [getattr(obj, x) for x in self.fields]
         values.append(obj.pk)
 
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute(self.query_foreign_keys)
-            cur.execute(self.query_update, values)
+            cur.execute(self.queries['foreign_keys'])
+            cur.execute(self.queries['update'], values)
             if cur.rowcount == 0:
                 raise ValueError('Try to update object with unknown primary key')
 
@@ -116,7 +123,7 @@ class SQLiteRepository(AbstractRepository[T]):
     def delete(self, pk: int) -> None:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
-            cur.execute(self.query_delete, [pk])
+            cur.execute(self.queries['delete'], [pk])
             if cur.rowcount == 0:
                 raise ValueError('Try to delete object with unknown primary key')
 

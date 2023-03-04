@@ -10,12 +10,12 @@ CREATE TABLE IF NOT EXISTS expense (
 CREATE TABLE IF NOT EXISTS budget (
     "amount" INTEGER NOT NULL CHECK("amount" >= 0),
     "category" INTEGER,
-    "period" TEXT NOT NULL DEFAULT 'D' CHECK("period" IN ('D', 'W', 'M'))
+    "period" TEXT NOT NULL DEFAULT 'D' CHECK("period" IN ('День', 'Неделя', 'Месяц'))
 );
 
 CREATE TABLE IF NOT EXISTS category (
     "name" TEXT NOT NULL CHECK(length("name") < 30),
-    "parent_id" INTEGER NOT NULL CHECK("amount" >= 0)
+    "parent" INTEGER
 );
 
 -- down
