@@ -1,22 +1,23 @@
 """
 Модель категории расходов
 """
+
 from collections import defaultdict
 from dataclasses import dataclass
 from typing import Iterator
-
-from ..repository.abstract_repository import AbstractRepository
+from bookkeeper.repository.abstract_repository import AbstractRepository
 
 
 @dataclass
 class Category:
     """
-    Категория расходов, хранит название в атрибуте name и ссылку (id) на
-    родителя (категория, подкатегорией которой является данная) в атрибуте parent.
-    У категорий верхнего уровня parent = None
+    Категория расходов.
+    name - название категории
+    parent_id - id родительской категории
+    pk - id записи в базе данных
     """
-    name: str
-    parent: int | None = None
+    name: str = ''
+    parent_id: int | None = None
     pk: int = 0
 
     def get_parent(self,
@@ -33,9 +34,9 @@ class Category:
         -------
         Объект класса Category или None
         """
-        if self.parent is None:
+        if self.parent_id is None:
             return None
-        return repo.get(self.parent)
+        return repo.get(self.parent_id)
 
     def get_all_parents(self,
                         repo: AbstractRepository['Category']
@@ -82,7 +83,7 @@ class Category:
 
         subcats = defaultdict(list)
         for cat in repo.get_all():
-            subcats[cat.parent].append(cat)
+            subcats[cat.parent_id].append(cat)
         return get_children(subcats, self.pk)
 
     @classmethod
@@ -112,7 +113,9 @@ class Category:
         """
         created: dict[str, Category] = {}
         for child, parent in tree:
-            cat = cls(child, created[parent].pk if parent is not None else None)
-            repo.add(cat)
-            created[child] = cat
+            category = cls(
+                name=child,
+                parent_id=created[parent].pk if parent is not None else None)
+            repo.add(category)
+            created[child] = category
         return list(created.values())

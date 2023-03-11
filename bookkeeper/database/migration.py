@@ -6,8 +6,6 @@ import sys
 import os
 import sqlite3
 
-from enum import Enum
-
 
 # CREATE_META_MIGRATION_TABLE = """CREATE TABLE IF NOT EXISTS meta_migration (
 #     "id" INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -36,7 +34,7 @@ AVAILABLE_MODES = ['up', 'down']
 MIGRATION_DIR = "migration"
 
 
-class Colors(Enum):
+class Colors:   # pylint: disable=too-few-public-methods
     """Класс с заданными константами для цветов."""
     INFO = '\033[94m'
     SUCCESS = '\033[92m'
@@ -122,6 +120,9 @@ def run_migration() -> None:
     all_file_names = os.listdir(MIGRATION_DIR)
     migrations = sorted([file_name for file_name in all_file_names
                          if file_name.endswith(".sql")])
+
+    if mode == "down":
+        migrations.reverse()
 
     for migration_name in migrations:
         execute_migration_file(migration_name, mode)

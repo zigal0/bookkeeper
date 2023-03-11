@@ -26,7 +26,7 @@ setup:
 .PHONY: lint
 lint:
 	poetry run mypy --strict bookkeeper
-	poetry run pylint bookkeeper
+	poetry run pylint --rcfile=.pylintrc bookkeeper
 	poetry run flake8 bookkeeper
 
 .PHONY: test
@@ -43,11 +43,11 @@ check:
 .PHONY: run
 run:
 	echo "Running app..."
-	poetry run python3 bookkeeper/simple_client.py
+	cd bookkeeper && poetry run python3 simple_client.py
 
 .PHONY: run-full
 run-full:
 	make local-migration-rs
-	cd bookkeeper && poetry run python3 simple_client.py
+	make run
 
 
