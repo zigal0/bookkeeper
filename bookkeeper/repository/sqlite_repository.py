@@ -5,18 +5,14 @@
 import sqlite3
 from typing import Any
 from inspect import get_annotations
-from datetime import datetime
+from datetime import datetime, date
 
 
 from bookkeeper.repository.abstract_repository import AbstractRepository, T
 
-DEFAULT_DATE_FORMAT = "%Y-%m-%d %H:%M:%S.%f"
-
 
 class SQLiteRepository(AbstractRepository[T]):
-    """
-    Основной репозиторий для работы с СУБД SQLite.
-    """
+    """Основной репозиторий для работы с СУБД SQLite."""
 
     def __init__(self, db_file: str, cls: type) -> None:
         self.db_file = db_file
@@ -33,28 +29,30 @@ class SQLiteRepository(AbstractRepository[T]):
         self.queries = {
             'foreign_keys': 'PRAGMA foreign_keys = ON',
             'add': f'INSERT INTO {self.table_name} ({names}) VALUES ({placeholders})',
-            'get': f'SELECT ROWID, * FROM {self.table_name} WHERE ROWID = ?',
-            'get_all': f'SELECT ROWID, * FROM {self.table_name}',
-            'update': f'UPDATE {self.table_name} SET {fields_update} WHERE ROWID = ?',
-            'delete': f'DELETE FROM {self.table_name} WHERE ROWID = ?',
+            'get': f'SELECT pk, {names} FROM {self.table_name} WHERE pk = ?',
+            'get_all': f'SELECT pk, {names}  FROM {self.table_name}',
+            'update': f'UPDATE {self.table_name} SET {fields_update} WHERE pk = ?',
+            'delete': f'DELETE FROM {self.table_name} WHERE pk = ?',
         }
 
-        # queries
-
-    def _row2obj(self, row: tuple[Any]) -> Any:
+    def _row2obj(self, row: tuple[Any]) -> T:
+        """Just a soul cry: dynamic typing is shit"""
         class_arguments = {}
 
-        # Компановка аргументов класса (+ обработка формата datetime)
+        # Компановка аргументов класса (+ обработка формата datetime, date)
         for field_value, field_name in zip(row[1:], self.fields.keys()):    # type: ignore
             if self.fields[field_name] == datetime:
-                field_value = datetime.strptime(field_value, DEFAULT_DATE_FORMAT)
+                field_value = datetime.fromisoformat(field_value)
+
+            if self.fields[field_name] == date:
+                field_value = date.fromisoformat(field_value)
 
             class_arguments[field_name] = field_value
 
         obj = self.cls(**class_arguments)
         obj.pk = row[0]
 
-        return obj
+        return obj  # type: ignore
 
     def add(self, obj: T) -> int:
         if getattr(obj, 'pk', None) != 0:
@@ -74,7 +72,7 @@ class SQLiteRepository(AbstractRepository[T]):
 
         return obj.pk
 
-    def get(self, pk: int) -> Any | None:
+    def get(self, pk: int) -> T | None:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
             row = cur.execute(self.queries['get'], [pk]).fetchone()
@@ -123,6 +121,7 @@ class SQLiteRepository(AbstractRepository[T]):
     def delete(self, pk: int) -> None:
         with sqlite3.connect(self.db_file) as con:
             cur = con.cursor()
+            cur.execute(self.queries['foreign_keys'])
             cur.execute(self.queries['delete'], [pk])
             if cur.rowcount == 0:
                 raise ValueError('Try to delete object with unknown primary key')

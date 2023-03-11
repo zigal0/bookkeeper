@@ -1,25 +1,36 @@
 import pytest
 import sqlite3
 from dataclasses import dataclass
-from datetime import datetime
-
+from datetime import datetime, date
 from bookkeeper.repository.sqlite_repository import SQLiteRepository
 
 DB_FILE = "bookkeeper_test.db"
 FIELD_INT = 1337
 FILED_STR = "smth"
-FIELD_DATE = datetime.now()
+FIELD_DATETIME = datetime.now().replace(microsecond=0)
+FIELD_DATE = date.today()
+
+TEST_TABLE_CREATE = '''CREATE TABLE IF NOT EXISTS custom (
+    pk INTEGER PRIMARY KEY AUTOINCREMENT, 
+    field_int int,
+    field_str int,
+    field_datetime text,
+    field_date text
+);
+'''
+
+TEST_TABLE_DROP = "DROP TABLE IF EXISTS custom;"
 
 
 @pytest.fixture
 def create_schema():
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
-        cur.execute("DROP TABLE IF EXISTS custom")
+        cur.execute(TEST_TABLE_DROP)
 
     with sqlite3.connect(DB_FILE) as con:
         cur = con.cursor()
-        cur.execute("CREATE TABLE IF NOT EXISTS custom(field_int int, field_str int, field_date text)")
+        cur.execute(TEST_TABLE_CREATE)
     con.close()
 
 
@@ -29,7 +40,8 @@ def custom_class():
     class Custom:
         field_int: int = FIELD_INT
         field_str: str = FILED_STR
-        field_date: datetime = FIELD_DATE
+        field_datetime: datetime = FIELD_DATETIME
+        field_date: date = FIELD_DATE
         pk: int = 0
 
     return Custom
@@ -42,12 +54,13 @@ def repo(custom_class, create_schema):
 
 def test__row2obj(repo):
     pk = 1
-
-    row = (pk, FIELD_INT, FILED_STR, str(FIELD_DATE))
+    row = (pk, FIELD_INT, FILED_STR, str(FIELD_DATETIME), str(FIELD_DATE))
     obj = repo._row2obj(row)
+
     assert obj.pk == pk
     assert obj.field_int == FIELD_INT
     assert obj.field_str == FILED_STR
+    assert obj.field_datetime == FIELD_DATETIME
     assert obj.field_date == FIELD_DATE
 
 
@@ -64,15 +77,17 @@ def test_crud(repo, custom_class):
     assert obj_get.field_int == obj_add.field_int
     assert obj_get.field_str == obj_add.field_str
     assert obj_get.field_date == obj_add.field_date
+    assert obj_get.field_datetime == obj_add.field_datetime
 
     # update
-    obj_update = custom_class(2022, "smth_new", datetime.now(), pk)
+    obj_update = custom_class(2022, "smth_new", datetime.now().replace(microsecond=0), date.today(), pk)
     repo.update(obj_update)
     obj_get = repo.get(pk)
     assert obj_get.pk == obj_update.pk
     assert obj_get.field_int == obj_update.field_int
     assert obj_get.field_str == obj_update.field_str
     assert obj_get.field_date == obj_update.field_date
+    assert obj_get.field_datetime == obj_update.field_datetime
 
     # delete
     repo.delete(pk)

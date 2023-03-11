@@ -1,16 +1,10 @@
 """
-Описан класс, представляющий бюджет
+Модель бюджета
 """
 
 from dataclasses import dataclass
-from enum import Enum
 
-
-class Period(Enum):
-    """Enum для задания дней"""
-    DAY = "День"
-    WEEK = "Неделя"
-    MONTH = "Месяц"
+ALLOWED_PERIODS = ['День', 'Неделя', 'Месяц', 'Год']
 
 
 @dataclass(slots=True)
@@ -18,10 +12,9 @@ class Budget:
     """
     Бюджет.
     amount - сумма
-    category - id категории бюджета
     period - промежуток времени, на который планируется бюджет
+    pk - id записи в базе данных
     """
-    amount: int
-    category: int
-    period: Period
+    amount: float = 0.0
+    period: str = 'День'
     pk: int = 0
