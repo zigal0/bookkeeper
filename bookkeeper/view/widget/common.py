@@ -1,4 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
+# Workaround for GitHub Actions.
 
 """
 Модуль общих виджетов.
@@ -15,10 +16,10 @@ from PySide6.QtGui import QStandardItemModel
 
 class CategoryDropdown(QComboBox):
     """Дропдаун категорий."""
-    def set_data(self, data: list[list[str]]) -> None:
+    def set_data(self, categories: list[list[str]]) -> None:
         """Устанавливает данные для дропдауна."""
         self.clear()
-        for category in data:
+        for category in categories:
             self.addItem(category[1], category[0])
 
     def get_selected_category_id(self) -> int:
@@ -166,13 +167,13 @@ class FrameViewWithControls(QFrame):
         super().__init__(parent)
 
         self.edit_buttons = EditButtons()
-        self.edit_buttons.add_btn.clicked.connect(  # type: ignore[attr-defined]
+        self.edit_buttons.add_btn.clicked.connect(      # type: ignore[attr-defined]
             self.on_add_button_clicked
         )
-        self.edit_buttons.update_btn.clicked.connect(  # type: ignore[attr-defined]
+        self.edit_buttons.update_btn.clicked.connect(   # type: ignore[attr-defined]
             self.on_update_button_clicked
         )
-        self.edit_buttons.delete_btn.clicked.connect(  # type: ignore[attr-defined]
+        self.edit_buttons.delete_btn.clicked.connect(   # type: ignore[attr-defined]
             self.on_delete_button_clicked
         )
 

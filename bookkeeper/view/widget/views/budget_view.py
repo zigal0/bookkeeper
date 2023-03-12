@@ -1,4 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
+# Workaround for GitHub Actions.
 
 """
 Модуль отображения бюджета.
@@ -9,13 +10,14 @@ from PySide6.QtWidgets import (
     QLabel, QWidget, QHeaderView,
     QComboBox, QGridLayout, QDoubleSpinBox
 )
+from PySide6.QtGui import QColor
 from bookkeeper.models.budget import ALLOWED_PERIODS, Budget
 from bookkeeper.view.widget.common import (
     DeleteTableContent, Table, FrameTableViewWithControls,
     EditWindows, AddUpdateTableContent
 )
 
-HEADERS = ["Период", "Сумма", "Бюджет"]
+HEADERS = ["Период", "Бюджет", "Расходы"]
 
 
 class BudgetView(FrameTableViewWithControls):
@@ -53,6 +55,12 @@ class BudgetView(FrameTableViewWithControls):
         """Устанавливает данные для виджета."""
         self.budgets = budgets
         self.table.set_data(budgets)
+
+        for row_id in range(self.table.rowCount()):
+            budget = float(self.table.item(row_id, 1).text())
+            general_expense = float(self.table.item(row_id, 2).text())
+            if general_expense > budget:
+                self.table.item(row_id, 2).setBackground(QColor(50, 0, 0))
 
     # Actions
 
