@@ -43,11 +43,11 @@ check:
 .PHONY: run
 run:
 	echo "Running app..."
-	cd bookkeeper && poetry run python3 simple_client.py
+	cd bookkeeper && poetry run python3 main.py
 
 .PHONY: run-full
 run-full:
-	make local-migration-rs
+	make local-migration-up
 	make run
 
 
