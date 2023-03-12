@@ -1,4 +1,5 @@
 # pylint: disable=import-error,no-name-in-module
+# Workaround for GitHub Actions.
 
 """
 Модуль отображения основного окна приложения.

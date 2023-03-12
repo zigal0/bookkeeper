@@ -22,6 +22,6 @@ class Expense:
     amount: float = 0.0
     category_id: int | None = None
     comment: str = ''
-    expense_date: date | None = None
+    expense_date: date = date.today()
     added_date: datetime = datetime.now().replace(microsecond=0)
     pk: int = 0
